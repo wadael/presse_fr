@@ -1,0 +1,319 @@
+== Guide de chargement des médias français/francophones
+Jérôme BATON
+v0.5, 2018-07-07
+:toc: right
+:imagesdir: images
+
+Ce guide est écrit en asciidoc et convertit en html.
+
+Son URL d'origine est  https://wadael.github.io/presse_fr/medias_francais.adoc
+
+
+=== Description
+Ce guide a pour vocation de nous faire comprendre qui possède quoi dans les médias français en jouant avec quelques données tout en apprenant certaines fonctionnalités de Neo4j.
+
+Cela nous permettra de voir:
+
+* Comment charger ces informations
+* Appliquer différents algorithmes
+* répondre à quelques questions
+
+NOTE: Ce guide n'a aucune prétention journalistique et n'est pas le résultat de longues heures d'enquêtes. Juste l'occasion de jouer avec des données publiques pour en tirer quelques informations.
+
+== Récupération des informations
+Les informations sur les médias français sont partagées par Le Monde Diplomatique, à cette adresse https://github.com/mdiplo/Medias_francais. 
+
+Merci beaucoup à eux.
+
+
+Récupérez les deux fichiers .tsv et déposez-les dans le répertoire import de votre instance Neo4j.
+
+Il s'agit de fichiers texte comparables à des fichiers CSV mis à part que le délimiteur est la tabulation et non la virgule. 
+
+De ce fait, nous pourrons utiliser notre chère instruction LOAD CSV.
+
+== Modélisation
+Le fichier __medias_francais.tsv__ contient des entités qui peuvent être des Personnes physiques, des personnes morales ou des médias.
+
+Le fichier __relations_medias_francais.tsv__ contient les relations entre ces entités. Le champs 'valeur' indique le degré de possession de l'entité 'source' sur l'entité 'cible'. Cela permettra de créer une relation 'POSSEDE' entre les entités
+
+=== Etiquettes
+Les étiquettes que j'envisage sont: Entite, Personne_Morale, Personne_Physique et Média.
+
+Par rapport aux données en entrée, il faut donc faire des transformations mineures lors de l'import.
+
+Il faudrait passer de 
+
+* Média à Media (optionnel)
+* Personne morale à Personne_Morale   
+* Personne physique à Personne_Physique
+
+Il faut au minimum se débarasser des espaces pour ne pas avoir à entourer les noms avec des guillements inversés (altgr+7).  
+
+Vu le faible volume de données, la création d'index n'est pas utile pour ne pas avoir à attendre les requêtes.
+
+Néanmoins, elle se fera lors de la création de la contrainte suivante :
+
+[source,cypher]
+----
+CREATE CONSTRAINT ON (e:Entite) ASSERT e.nom IS UNIQUE
+----
+
+
+== Chargement des données
+
+===  Le code
+
+Pour chargers les données, je vous propose ces codes. 
+
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM 'file:///medias_francais.tsv' AS line FIELDTERMINATOR '\t' 
+MERGE (node0:Entite{nom: line.nom}) 
+FOREACH(uselessVar IN CASE WHEN trim(line.`rangChallenges`) <> "" THEN [1] ELSE [] END | SET node0.rangchallenges= toInt(line.`rangChallenges`))
+FOREACH(uselessVa IN CASE WHEN trim(line.`mediaType`) <> "" THEN [1] ELSE [] END | SET node0.mediaEchelle = line.`mediaType`)
+FOREACH(uselessV IN CASE WHEN trim(line.`mediaPeriodicite`) <> "" THEN [1] ELSE [] END | SET node0.mediaPeriodicite = line.`mediaPeriodicite`)
+FOREACH(useless IN CASE WHEN trim(line.`mediaEchelle`) <> "" THEN [1] ELSE [] END | SET node0.mediaEchelle = line.`mediaEchelle`)
+FOREACH(u IN CASE WHEN trim(line.commentaire) <> "" THEN [1] ELSE [] END | SET node0.commentaire = line.commentaire)
+
+WITH node0,line
+CALL apoc.create.addLabels(node0,[replace(line.`typeLibelle`," ","_")]) YIELD node
+RETURN node
+----
+
+Et pour charger le deuxième fichier, le code est: 
+
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM 'file:///relations_medias_francais.tsv' AS ligne FIELDTERMINATOR '\t' 
+MERGE (nodeO:Entite{nom: ligne.origine})
+MERGE (nodeC:Entite{nom: ligne.cible})
+MERGE (nodeO)-[p:POSSEDE]->(nodeC)
+
+FOREACH(u IN CASE WHEN trim(ligne.valeur) <> "" THEN [1] ELSE [] END | SET p.valeur = toInt(ligne.valeur))
+FOREACH(u IN CASE WHEN trim(ligne.source) <> "" THEN [1] ELSE [] END | SET p.source = ligne.source)
+FOREACH(u IN CASE WHEN trim(ligne.datePublication) <> "" THEN [1] ELSE [] END | SET p.datePublication = ligne.datePublication)
+----
+
+== Aperçu
+
+Utilisons le Neo4j Browser pour jeter un oeil sur les données chargées. Voyons qui possède quoi avec cette requête.
+
+[source,cypher]
+----  
+MATCH paf = (pp:Personne_physique)-[:POSSEDE*]->(m:Média)
+RETURN paf
+----
+
+
+
+== Pagerank
+
+Lançons un petit PageRank, histoire de voir. C'est un algorithme qui permet d'identifier les noeuds les plus connectés (cela nécessite d'aoir installé APOC). 
+
+[source,cypher]
+----  
+MATCH (node:Entite)
+WITH collect(node) AS nodes
+CALL apoc.algo.pageRank(nodes) YIELD node, score
+RETURN node.nom, score
+ORDER BY score DESC
+----
+
+La requête nous renvoie en premier les noeuds les plus connectés. 
+
+De façon surprenante, le top 3 que j'obtiens avec les données courantes est 
+
+|===
+|"La Tribune"|0.69473
+|"Hima Groupe"|0.64087
+|"Arte"|0.62095
+|===
+
+Faisons de même pour les personnes morales. Le top 3 devient
+
+|===
+|"Hima Groupe"|0.64087
+|"Groupe Rossel La Voix"|0.51337
+|"Lagardère Active"|0.49425
+|===
+
+N'étant pas pas familier des médias, je ne connais pas ces sociétés.
+
+Passons aux personnes physiques:
+[source,cypher]
+----  
+MATCH (no:Personne_physique) WITH collect(no) AS nodes
+CALL apoc.algo.pageRankWithConfig(nodes,{types:'POSSEDE'}) YIELD node, score
+RETURN node.nom, score
+ORDER BY score DESC
+----
+
+Et là, chose surprenante, tous les individus listés ont un score de 0.15
+
+Ce qui signifie qu'ils ont tous les même nombre de connections. Ah ...
+
+Alors, cherchons qui possède le plus de médias.
+
+
+[source,cypher]
+----  
+MATCH (pp:Personne_physique)-[p:POSSEDE]->(m:Média)
+RETURN pp.nom, collect(m.nom) as titres, size(collect(m.nom)) as nbTitres ORDER BY nbTitres DESC
+----  
+
+Le surprenant résultat est normal, il n'indique que les possessions directes. 
+
+Voici de quoi obtenir un résultat plus parlant, en utilisant toujours la relation POSSEDE mais aussi de façon indirecte, avec la prise en compte de la possession de personne morale qui possède le média.
+
+[source,cypher]
+----  
+MATCH (pp:Personne_physique)-[p:POSSEDE*]->(m:Média)
+RETURN pp.nom, collect(m.nom) as titres, size(collect(m.nom)) as nbTitres ORDER BY nbTitres DESC
+----  
+
+Cela nous donne un résultat plus crédible.
+
+== Corrélation nombre de médias et rang Challenges ?
+
+Voyons maintenant si le rang donné par le magazine Challenges et le nombre de journaux possédés sont en rapport. 
+D'après vous ?
+
+Voici la requête Cypher
+[source,cypher]
+----  
+MATCH (pp:Personne_physique)-[p:POSSEDE*..]->(m:Média)
+RETURN  coalesce(toInt(pp.rangchallenges),0) as rang, size(collect(m.nom)) as nbTitres  ORDER BY rang ASC
+----
+
+Pour visualiser le résultat rapidement, j'utilise Spoon (:play spoon.html) qui me permet d'obtenir ce graphique, avec en x le rang, et en y le nombre de titres
+
+image::https://wadael.github.io/presse_fr/images/barchart_presse_01.png[]
+
+Le rang 0 est attibué aux personnes n'ayant pas de rang renseigné. De ce fait, la première colonne est haute. 
+
+Benoitement, je m'attendais à une belle pente descendante. 
+Il n'en est rien. Soit. 
+
+
+
+== Aggrégation de données
+Une liste de médias est un bon point de départ. 
+Mais ....
+
+Il y a d'autres informations qui seraient intéressantes d'intégrer, comme le montant des aides étatiques, les volumes de diffusion. 
+
+En tant que contribuable français, je voudrais voir à quels journaux et par extension à quelles personnes bénéficient les aides de l'état à la presse.
+
+Il y a aussi le nombre d'exemplaires par média qui me semble pertinent afin de voir le poids des individus sur la diffusion des informations. 
+
+=== Aides à la presse
+J'ai trouvé les montants sur un site qui archive le web  http://archive.wikiwix.com/cache/?url=https%3A%2F%2Fwww.data.gouv.fr%2Ffr%2Fdatasets%2Faides-a-la-presse-classement-des-titres-de-presse-aides%2F[ici], https://www.data.gouv.fr/fr/datasets/aides-a-la-presse-classement-des-titres-de-presse-aides/[là] pour les années 2012 à 2016.
+
+Cela est, comme souvent, proposé au format xls, donc une conversion vers le format csv s'avère nécessaire. Premier ralentissement.
+
+Ensuite, le MATCHing se fera sur le nom du média hors, les noms ne suivent pas la même nomenclature.
+
+Le Figaro et Figaro (Le) ne sont pas la même chose pour l'instruction MATCH.
+De plus, tous les bénéficiaires ne sont pas forcément des médias. Deuxième ralentissement.
+
+Pour preuve, les deux bénéficiaires les plus importants sont:
+|====
+|SOCIETE COMMUNE POUR LES INFRASTRUCTURES DE LA DISTRIBUTION DE LA PRESSE | 4 419 926,00 €
+|IMPRIMERIE DE L'AVESNOIS| 2 503 123,00 €
+|====
+
+D'autres bénéficiaires sont des sites internet regroupés, comme j7.agefi.fr; agefi.fr; L'Agefi Hebdo Magazine pour 	159 708,00 €
+
+Ce premier fichier trouvé n'est pas utilisable en l'état.
+
+=== Volumes
+Pour les médias de presse écrite, les volumes de diffusion annuels seraient aussi un bon indicateur.
+Quels sont les titres qui recoivent le plus par exemplaire, et par extension quelle personne physique reçoit le plus de subventions.
+
+== Coup double !
+
+J'ai trouvé https://www.data.gouv.fr/fr/datasets/r/6f66e292-c4d9-439e-916d-26257107833a[une URL] qui correspond à un fichier CSV ayant à la fois des indications sur le volume des ventes et les aides reçues.
+
+Une petite vérification avant d'écrire l'import: faire afficher les informations voulues des cinq premières lignes 
+
+Certains journaux sont indiqués avec leur site web. Cela va nécessiter une séparation, à réaliser avec l'instruction split, puis de prendre le premier élément.
+
+[source,cypher]
+----  
+WITH "file:///aides-a-la-presse-classement-des-titres-de-presse-aides.csv" AS url
+LOAD CSV WITH HEADERS FROM url AS ligne FIELDTERMINATOR ";"
+RETURN ligne.`Bénéficiaires`, split( ligne.`Bénéficiaires`,"/"), ligne.`Total des aides individuelles (en €)`,ligne.`Diffusion annuelle (en exemplaires`, ligne.`Année` LIMIT 5 
+----  
+
+Ce contenu sera inséré dans un nouveau noeud 'Statistique' relié au noeud Média via une relation 'DECRIT'.
+
+Je vous propose le code suivant pour l'intégration de ce fichier
+
+Déjà, on va devoir ajouter un champs à tous les médias
+[source,cypher]
+----  
+MATCH (m:Média)
+SET m.upNom = toUpper(m.nom)
+RETURN count(m)
+----  
+
+
+[source,cypher]
+----  
+WITH "file:///aides-a-la-presse-classement-des-titres-de-presse-aides.csv" AS url
+LOAD CSV WITH HEADERS FROM url AS ligne FIELDTERMINATOR ";"
+
+MERGE(m:Média {upNom:toUpper( split( ligne.`Bénéficiaires`,"/")[0] ) })
+SET m.nom=split( ligne.`Bénéficiaires`,"/")[0]
+CREATE (s:Statistique { annee: toInt(ligne.`Année`), totalAides: toInt(ligne.`Total des aides individuelles (en €)`), diffusionAnnuelle: toInt(ligne.`Diffusion annuelle (en exemplaires`)  })
+
+CREATE (m)<-[d:DECRIT]-(s)
+RETURN m,d,s
+----
+
+== Qui touche le plus d'euros ?
+Qui (par extension) touche le plus d'aides étatiques ? et pour combien de médias presse ?
+
+[source,cypher]
+----  
+MATCH (pp:Personne_physique)-[p:POSSEDE*..]->(m:Média)<--(s:Statistique)
+RETURN pp.nom, coalesce(toInt(pp.rangchallenges),0) as rangChallenges, size(collect(m.nom)) as nbTitres, sum(s.totalAides) AS jackpot ORDER BY jackpot DESC
+----
+
+De belles sommes, de quoi être très euro
+
+
+
+== Qui touche le plus de lecteurs ?
+[source,cypher]
+----  
+MATCH (pp:Personne_physique)-[p:POSSEDE*..]->(m:Média)<--(s:Statistique)
+RETURN pp.nom, coalesce(toInt(pp.rangchallenges),0) as rangChallenges, size(collect(m.nom)) as nbTitres, sum(s.diffusionAnnuelle) AS targetSize ORDER BY targetSize DESC
+----
+
+
+/*
+== PageRank bis
+
+[source,cypher]
+----  
+CALL algo.pageRank.stream('Entite', 'POSSEDE', {iterations:30, dampingFactor:0.85}) 
+YIELD node, score 
+RETURN node,score order by score desc limit 100
+----
+*/
+
+== Auto-promotion
+Si vous cherchez un ouvrage pour en apprendre plus sur Neo4j, je vous conseille mon livre, **en anglais**, vous le trouverez partout (Fnac, Amazon) notamment sur le site de mon éditeur (Packt Publishing) qui fait régulièrement des promotions  https://www.packtpub.com/big-data-and-business-intelligence/learning-neo4j-3x-second-edition?referrer=wadael[Learning Neo4j, Second Edition] 
+
+et si vous avez besoin d'un consultant compétent sur Neo4j, contactez moi via https://www.linkedin.com/in/jeromebaton/[LinkedIn] ou par email: monNomMonPrenom  indiqués en début et fin de ce document suivis de  .pro@gmail.com    (collés,sans accents)
+
+image::https://wadael.github.io/presse_fr/images/B05824_cover.png[]
+
+Merci d'avoir lu ma publicité :)
+
+
+
+jerome baton
+

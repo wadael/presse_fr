@@ -1,0 +1,627 @@
+<style type="text/css" media="screen">
+/*
+.nodes-image {
+	margin:-100;
+}
+*/	
+@import url("//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css");
+
+.imageblock .content img, .image img {max-width: 900px;max-height: 300px;}
+.deck h3, .deck h4 {display: block !important;margin-bottom:8px;margin-top:5px;}
+.listingblock {margin:8px;}
+.pull-bottom {position:relative;bottom:1em;}
+.admonitionblock td.icon [class^="fa icon-"]{font-size:2.5em;text-shadow:1px 1px 2px rgba(0,0,0,.5);cursor:default}
+.admonitionblock td.icon .icon-note:before{content:"\f05a";color:#19407c}
+.admonitionblock td.icon .icon-tip:before{content:"\f0eb";text-shadow:1px 1px 2px rgba(155,155,0,.8);color:#111}
+.admonitionblock td.icon .icon-warning:before{content:"\f071";color:#bf6900}
+.admonitionblock td.icon .icon-caution:before{content:"\f06d";color:#bf3400}
+.admonitionblock td.icon .icon-important:before{content:"\f06a";color:#bf0000}
+.admonitionblock.note.speaker { display:none; }
+</style>
+<style type="text/css" media="screen">
+/* #editor.maximize-editor .CodeMirror-code { font-size:24px; line-height:26px; } */
+</style>
+<article class="guide" ng-controller="AdLibDataController">
+  <carousel class="deck container-fluid">
+    <!--slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Guide de chargement des médias français/francophones</h3>
+        <p class="lead">Information</p>
+			<!dl>
+				
+				
+				
+				
+				
+			</dl>
+		</div>
+      <div class="col-sm-9">
+        <figure>
+          <img style="width:300px" src=""/>
+        </figure>
+      </div>
+    </slide-->
+    
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Guide de chargement des médias français/francophones</h3>
+    <br/>
+    <div>
+      <div class="paragraph">
+<p>Jérôme BATON
+v0.5, 2018-07-07
+:toc: right
+:imagesdir: images</p>
+</div>
+<div class="paragraph">
+<p>Ce guide est écrit en asciidoc et convertit en html.</p>
+</div>
+<div class="paragraph">
+<p>Son URL d&#8217;origine est  <a href="https://wadael.github.io/presse_fr/medias_francais.adoc" class="bare">https://wadael.github.io/presse_fr/medias_francais.adoc</a></p>
+</div>
+
+
+
+   <h4>Description</h4>
+   <div class="paragraph">
+<p>Ce guide a pour vocation de nous faire comprendre qui possède quoi dans les médias français en jouant avec quelques données tout en apprenant certaines fonctionnalités de Neo4j.</p>
+</div>
+<div class="paragraph">
+<p>Cela nous permettra de voir:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Comment charger ces informations</p>
+</li>
+<li>
+<p>Appliquer différents algorithmes</p>
+</li>
+<li>
+<p>répondre à quelques questions</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Ce guide n&#8217;a aucune prétention journalistique et n&#8217;est pas le résultat de longues heures d&#8217;enquêtes. Juste l&#8217;occasion de jouer avec des données publiques pour en tirer quelques informations.
+</td>
+</tr>
+</table>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Récupération des informations</h3>
+    <br/>
+    <div>
+      <div class="paragraph">
+<p>Les informations sur les médias français sont partagées par Le Monde Diplomatique, à cette adresse <a href="https://github.com/mdiplo/Medias_francais" class="bare">https://github.com/mdiplo/Medias_francais</a>.</p>
+</div>
+<div class="paragraph">
+<p>Merci beaucoup à eux.</p>
+</div>
+<div class="paragraph">
+<p>Récupérez les deux fichiers .tsv et déposez-les dans le répertoire import de votre instance Neo4j.</p>
+</div>
+<div class="paragraph">
+<p>Il s&#8217;agit de fichiers texte comparables à des fichiers CSV mis à part que le délimiteur est la tabulation et non la virgule.</p>
+</div>
+<div class="paragraph">
+<p>De ce fait, nous pourrons utiliser notre chère instruction LOAD CSV.</p>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Modélisation</h3>
+    <br/>
+    <div>
+      <div class="paragraph">
+<p>Le fichier <em>medias_francais.tsv</em> contient des entités qui peuvent être des Personnes physiques, des personnes morales ou des médias.</p>
+</div>
+<div class="paragraph">
+<p>Le fichier <em>relations_medias_francais.tsv</em> contient les relations entre ces entités. Le champs 'valeur' indique le degré de possession de l&#8217;entité 'source' sur l&#8217;entité 'cible'. Cela permettra de créer une relation 'POSSEDE' entre les entités</p>
+</div>
+
+
+
+   <h4>Etiquettes</h4>
+   <div class="paragraph">
+<p>Les étiquettes que j&#8217;envisage sont: Entite, Personne_Morale, Personne_Physique et Média.</p>
+</div>
+<div class="paragraph">
+<p>Par rapport aux données en entrée, il faut donc faire des transformations mineures lors de l&#8217;import.</p>
+</div>
+<div class="paragraph">
+<p>Il faudrait passer de</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Média à Media (optionnel)</p>
+</li>
+<li>
+<p>Personne morale à Personne_Morale</p>
+</li>
+<li>
+<p>Personne physique à Personne_Physique</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Il faut au minimum se débarasser des espaces pour ne pas avoir à entourer les noms avec des guillements inversés (altgr+7).</p>
+</div>
+<div class="paragraph">
+<p>Vu le faible volume de données, la création d&#8217;index n&#8217;est pas utile pour ne pas avoir à attendre les requêtes.</p>
+</div>
+<div class="paragraph">
+<p>Néanmoins, elle se fera lors de la création de la contrainte suivante :</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->CREATE CONSTRAINT ON (e:Entite) ASSERT e.nom IS UNIQUE<!--/code--></pre>
+</div>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Chargement des données</h3>
+    <br/>
+    <div>
+      
+
+
+   <h4>Le code</h4>
+   <div class="paragraph">
+<p>Pour chargers les données, je vous propose ces codes.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->LOAD CSV WITH HEADERS FROM 'file:///medias_francais.tsv' AS line FIELDTERMINATOR '\t'
+MERGE (node0:Entite{nom: line.nom})
+FOREACH(uselessVar IN CASE WHEN trim(line.`rangChallenges`) &lt;&gt; "" THEN [1] ELSE [] END | SET node0.rangchallenges= toInt(line.`rangChallenges`))
+FOREACH(uselessVa IN CASE WHEN trim(line.`mediaType`) &lt;&gt; "" THEN [1] ELSE [] END | SET node0.mediaEchelle = line.`mediaType`)
+FOREACH(uselessV IN CASE WHEN trim(line.`mediaPeriodicite`) &lt;&gt; "" THEN [1] ELSE [] END | SET node0.mediaPeriodicite = line.`mediaPeriodicite`)
+FOREACH(useless IN CASE WHEN trim(line.`mediaEchelle`) &lt;&gt; "" THEN [1] ELSE [] END | SET node0.mediaEchelle = line.`mediaEchelle`)
+FOREACH(u IN CASE WHEN trim(line.commentaire) &lt;&gt; "" THEN [1] ELSE [] END | SET node0.commentaire = line.commentaire)
+
+WITH node0,line
+CALL apoc.create.addLabels(node0,[replace(line.`typeLibelle`," ","_")]) YIELD node
+RETURN node<!--/code--></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Et pour charger le deuxième fichier, le code est:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->LOAD CSV WITH HEADERS FROM 'file:///relations_medias_francais.tsv' AS ligne FIELDTERMINATOR '\t'
+MERGE (nodeO:Entite{nom: ligne.origine})
+MERGE (nodeC:Entite{nom: ligne.cible})
+MERGE (nodeO)-[p:POSSEDE]-&gt;(nodeC)
+
+FOREACH(u IN CASE WHEN trim(ligne.valeur) &lt;&gt; "" THEN [1] ELSE [] END | SET p.valeur = toInt(ligne.valeur))
+FOREACH(u IN CASE WHEN trim(ligne.source) &lt;&gt; "" THEN [1] ELSE [] END | SET p.source = ligne.source)
+FOREACH(u IN CASE WHEN trim(ligne.datePublication) &lt;&gt; "" THEN [1] ELSE [] END | SET p.datePublication = ligne.datePublication)<!--/code--></pre>
+</div>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Aperçu</h3>
+    <br/>
+    <div>
+      <div class="paragraph">
+<p>Utilisons le Neo4j Browser pour jeter un oeil sur les données chargées. Voyons qui possède quoi avec cette requête.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH paf = (pp:Personne_physique)-[:POSSEDE*]-&gt;(m:Média)
+RETURN paf<!--/code--></pre>
+</div>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Pagerank</h3>
+    <br/>
+    <div>
+      <div class="paragraph">
+<p>Lançons un petit PageRank, histoire de voir. C&#8217;est un algorithme qui permet d&#8217;identifier les noeuds les plus connectés (cela nécessite d&#8217;aoir installé APOC).</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (node:Entite)
+WITH collect(node) AS nodes
+CALL apoc.algo.pageRank(nodes) YIELD node, score
+RETURN node.nom, score
+ORDER BY score DESC<!--/code--></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>La requête nous renvoie en premier les noeuds les plus connectés.</p>
+</div>
+<div class="paragraph">
+<p>De façon surprenante, le top 3 que j&#8217;obtiens avec les données courantes est</p>
+</div>
+<table class="table tableblock frame-all grid-all" style="width: 100%;">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">"La Tribune"</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.69473</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">"Hima Groupe"</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.64087</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">"Arte"</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.62095</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Faisons de même pour les personnes morales. Le top 3 devient</p>
+</div>
+<table class="table tableblock frame-all grid-all" style="width: 100%;">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">"Hima Groupe"</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.64087</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">"Groupe Rossel La Voix"</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.51337</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">"Lagardère Active"</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.49425</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>N&#8217;étant pas pas familier des médias, je ne connais pas ces sociétés.</p>
+</div>
+<div class="paragraph">
+<p>Passons aux personnes physiques:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (no:Personne_physique) WITH collect(no) AS nodes
+CALL apoc.algo.pageRankWithConfig(nodes,{types:'POSSEDE'}) YIELD node, score
+RETURN node.nom, score
+ORDER BY score DESC<!--/code--></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Et là, chose surprenante, tous les individus listés ont un score de 0.15</p>
+</div>
+<div class="paragraph">
+<p>Ce qui signifie qu&#8217;ils ont tous les même nombre de connections. Ah &#8230;&#8203;</p>
+</div>
+<div class="paragraph">
+<p>Alors, cherchons qui possède le plus de médias.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (pp:Personne_physique)-[p:POSSEDE]-&gt;(m:Média)
+RETURN pp.nom, collect(m.nom) as titres, size(collect(m.nom)) as nbTitres ORDER BY nbTitres DESC<!--/code--></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Le surprenant résultat est normal, il n&#8217;indique que les possessions directes.</p>
+</div>
+<div class="paragraph">
+<p>Voici de quoi obtenir un résultat plus parlant, en utilisant toujours la relation POSSEDE mais aussi de façon indirecte, avec la prise en compte de la possession de personne morale qui possède le média.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (pp:Personne_physique)-[p:POSSEDE*]-&gt;(m:Média)
+RETURN pp.nom, collect(m.nom) as titres, size(collect(m.nom)) as nbTitres ORDER BY nbTitres DESC<!--/code--></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Cela nous donne un résultat plus crédible.</p>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Corrélation nombre de médias et rang Challenges ?</h3>
+    <br/>
+    <div>
+      <div class="paragraph">
+<p>Voyons maintenant si le rang donné par le magazine Challenges et le nombre de journaux possédés sont en rapport.
+D&#8217;après vous ?</p>
+</div>
+<div class="paragraph">
+<p>Voici la requête Cypher</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (pp:Personne_physique)-[p:POSSEDE*..]-&gt;(m:Média)
+RETURN  coalesce(toInt(pp.rangchallenges),0) as rang, size(collect(m.nom)) as nbTitres  ORDER BY rang ASC<!--/code--></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Pour visualiser le résultat rapidement, j&#8217;utilise Spoon (:play spoon.html) qui me permet d&#8217;obtenir ce graphique, avec en x le rang, et en y le nombre de titres</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">image</dt>
+<dd>
+<p><a href="https://wadael.github.io/presse_fr/images/barchart_presse_01.png" class="bare">https://wadael.github.io/presse_fr/images/barchart_presse_01.png</a></p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Le rang 0 est attibué aux personnes n&#8217;ayant pas de rang renseigné. De ce fait, la première colonne est haute.</p>
+</div>
+<div class="paragraph">
+<p>Benoitement, je m&#8217;attendais à une belle pente descendante.
+Il n&#8217;en est rien. Soit.</p>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Aggrégation de données</h3>
+    <br/>
+    <div>
+      <div class="paragraph">
+<p>Une liste de médias est un bon point de départ.
+Mais &#8230;&#8203;.</p>
+</div>
+<div class="paragraph">
+<p>Il y a d&#8217;autres informations qui seraient intéressantes d&#8217;intégrer, comme le montant des aides étatiques, les volumes de diffusion.</p>
+</div>
+<div class="paragraph">
+<p>En tant que contribuable français, je voudrais voir à quels journaux et par extension à quelles personnes bénéficient les aides de l&#8217;état à la presse.</p>
+</div>
+<div class="paragraph">
+<p>Il y a aussi le nombre d&#8217;exemplaires par média qui me semble pertinent afin de voir le poids des individus sur la diffusion des informations.</p>
+</div>
+
+
+
+   <h4>Aides à la presse</h4>
+   <div class="paragraph">
+<p>J&#8217;ai trouvé les montants sur un site qui archive le web  <a href="http://archive.wikiwix.com/cache/?url=https%3A%2F%2Fwww.data.gouv.fr%2Ffr%2Fdatasets%2Faides-a-la-presse-classement-des-titres-de-presse-aides%2F">ici</a>, <a href="https://www.data.gouv.fr/fr/datasets/aides-a-la-presse-classement-des-titres-de-presse-aides/">là</a> pour les années 2012 à 2016.</p>
+</div>
+<div class="paragraph">
+<p>Cela est, comme souvent, proposé au format xls, donc une conversion vers le format csv s&#8217;avère nécessaire. Premier ralentissement.</p>
+</div>
+<div class="paragraph">
+<p>Ensuite, le MATCHing se fera sur le nom du média hors, les noms ne suivent pas la même nomenclature.</p>
+</div>
+<div class="paragraph">
+<p>Le Figaro et Figaro (Le) ne sont pas la même chose pour l&#8217;instruction MATCH.
+De plus, tous les bénéficiaires ne sont pas forcément des médias. Deuxième ralentissement.</p>
+</div>
+<div class="paragraph">
+<p>Pour preuve, les deux bénéficiaires les plus importants sont:</p>
+</div>
+<table class="table tableblock frame-all grid-all" style="width: 100%;">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SOCIETE COMMUNE POUR LES INFRASTRUCTURES DE LA DISTRIBUTION DE LA PRESSE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4 419 926,00 €</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">IMPRIMERIE DE L&#8217;AVESNOIS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2 503 123,00 €</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>D&#8217;autres bénéficiaires sont des sites internet regroupés, comme j7.agefi.fr; agefi.fr; L&#8217;Agefi Hebdo Magazine pour 	159 708,00 €</p>
+</div>
+<div class="paragraph">
+<p>Ce premier fichier trouvé n&#8217;est pas utilisable en l&#8217;état.</p>
+</div>
+
+
+
+   <h4>Volumes</h4>
+   <div class="paragraph">
+<p>Pour les médias de presse écrite, les volumes de diffusion annuels seraient aussi un bon indicateur.
+Quels sont les titres qui recoivent le plus par exemplaire, et par extension quelle personne physique reçoit le plus de subventions.</p>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Coup double !</h3>
+    <br/>
+    <div>
+      <div class="paragraph">
+<p>J&#8217;ai trouvé <a href="https://www.data.gouv.fr/fr/datasets/r/6f66e292-c4d9-439e-916d-26257107833a">une URL</a> qui correspond à un fichier CSV ayant à la fois des indications sur le volume des ventes et les aides reçues.</p>
+</div>
+<div class="paragraph">
+<p>Une petite vérification avant d&#8217;écrire l&#8217;import: faire afficher les informations voulues des cinq premières lignes</p>
+</div>
+<div class="paragraph">
+<p>Certains journaux sont indiqués avec leur site web. Cela va nécessiter une séparation, à réaliser avec l&#8217;instruction split, puis de prendre le premier élément.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->WITH "file:///aides-a-la-presse-classement-des-titres-de-presse-aides.csv" AS url
+LOAD CSV WITH HEADERS FROM url AS ligne FIELDTERMINATOR ";"
+RETURN ligne.`Bénéficiaires`, split( ligne.`Bénéficiaires`,"/"), ligne.`Total des aides individuelles (en €)`,ligne.`Diffusion annuelle (en exemplaires`, ligne.`Année` LIMIT 5<!--/code--></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Ce contenu sera inséré dans un nouveau noeud 'Statistique' relié au noeud Média via une relation 'DECRIT'.</p>
+</div>
+<div class="paragraph">
+<p>Je vous propose le code suivant pour l&#8217;intégration de ce fichier</p>
+</div>
+<div class="paragraph">
+<p>Déjà, on va devoir ajouter un champs à tous les médias</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (m:Média)
+SET m.upNom = toUpper(m.nom)
+RETURN count(m)<!--/code--></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->WITH "file:///aides-a-la-presse-classement-des-titres-de-presse-aides.csv" AS url
+LOAD CSV WITH HEADERS FROM url AS ligne FIELDTERMINATOR ";"
+
+MERGE(m:Média {upNom:toUpper( split( ligne.`Bénéficiaires`,"/")[0] ) })
+SET m.nom=split( ligne.`Bénéficiaires`,"/")[0]
+CREATE (s:Statistique { annee: toInt(ligne.`Année`), totalAides: toInt(ligne.`Total des aides individuelles (en €)`), diffusionAnnuelle: toInt(ligne.`Diffusion annuelle (en exemplaires`)  })
+
+CREATE (m)&lt;-[d:DECRIT]-(s)
+RETURN m,d,s<!--/code--></pre>
+</div>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Qui touche le plus d&#8217;euros ?</h3>
+    <br/>
+    <div>
+      <div class="paragraph">
+<p>Qui (par extension) touche le plus d&#8217;aides étatiques ? et pour combien de médias presse ?</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (pp:Personne_physique)-[p:POSSEDE*..]-&gt;(m:Média)&lt;--(s:Statistique)
+RETURN pp.nom, coalesce(toInt(pp.rangchallenges),0) as rangChallenges, size(collect(m.nom)) as nbTitres, sum(s.totalAides) AS jackpot ORDER BY jackpot DESC<!--/code--></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>De belles sommes, de quoi être très euro</p>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Qui touche le plus de lecteurs ?</h3>
+    <br/>
+    <div>
+      <div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (pp:Personne_physique)-[p:POSSEDE*..]-&gt;(m:Média)&lt;--(s:Statistique)
+RETURN pp.nom, coalesce(toInt(pp.rangchallenges),0) as rangChallenges, size(collect(m.nom)) as nbTitres, sum(s.diffusionAnnuelle) AS targetSize ORDER BY targetSize DESC<!--/code--></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>/*
+== PageRank bis</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->CALL algo.pageRank.stream('Entite', 'POSSEDE', {iterations:30, dampingFactor:0.85})
+YIELD node, score
+RETURN node,score order by score desc limit 100<!--/code--></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>*/</p>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Auto-promotion</h3>
+    <br/>
+    <div>
+      <div class="paragraph">
+<p>Si vous cherchez un ouvrage pour en apprendre plus sur Neo4j, je vous conseille mon livre, <strong>en anglais</strong>, vous le trouverez partout (Fnac, Amazon) notamment sur le site de mon éditeur (Packt Publishing) qui fait régulièrement des promotions  <a href="https://www.packtpub.com/big-data-and-business-intelligence/learning-neo4j-3x-second-edition?referrer=wadael">Learning Neo4j, Second Edition</a></p>
+</div>
+<div class="paragraph">
+<p>et si vous avez besoin d&#8217;un consultant compétent sur Neo4j, contactez moi via <a href="https://www.linkedin.com/in/jeromebaton/">LinkedIn</a> ou par email: monNomMonPrenom  indiqués en début et fin de ce document suivis de  .<a href="mailto:pro@gmail.com">pro@gmail.com</a>    (collés,sans accents)</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">image</dt>
+<dd>
+<p><a href="https://wadael.github.io/presse_fr/images/B05824_cover.png" class="bare">https://wadael.github.io/presse_fr/images/B05824_cover.png</a></p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Merci d&#8217;avoir lu ma publicité :)</p>
+</div>
+<div class="paragraph">
+<p>jerome baton</p>
+</div>
+	</div>
+  </div>
+</slide>
+  </carousel>
+</article>
