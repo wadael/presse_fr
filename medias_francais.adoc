@@ -293,17 +293,6 @@ RETURN pp.nom, coalesce(toInt(pp.rangchallenges),0) as rangChallenges, size(coll
 ----
 
 
-/*
-== PageRank bis
-
-[source,cypher]
-----  
-CALL algo.pageRank.stream('Entite', 'POSSEDE', {iterations:30, dampingFactor:0.85}) 
-YIELD node, score 
-RETURN node,score order by score desc limit 100
-----
-*/
-
 == Auto-promotion
 Si vous cherchez un ouvrage pour en apprendre plus sur Neo4j, je vous conseille mon livre, **en anglais**, vous le trouverez partout (Fnac, Amazon) notamment sur le site de mon éditeur (Packt Publishing) qui fait régulièrement des promotions  https://www.packtpub.com/big-data-and-business-intelligence/learning-neo4j-3x-second-edition?referrer=wadael[Learning Neo4j, Second Edition] 
 

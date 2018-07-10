@@ -572,20 +572,6 @@ RETURN pp.nom, coalesce(toInt(pp.rangchallenges),0) as rangChallenges, size(coll
 RETURN pp.nom, coalesce(toInt(pp.rangchallenges),0) as rangChallenges, size(collect(m.nom)) as nbTitres, sum(s.diffusionAnnuelle) AS targetSize ORDER BY targetSize DESC<!--/code--></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>/*
-== PageRank bis</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->CALL algo.pageRank.stream('Entite', 'POSSEDE', {iterations:30, dampingFactor:0.85})
-YIELD node, score
-RETURN node,score order by score desc limit 100<!--/code--></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>*/</p>
-</div>
 	</div>
   </div>
 </slide>
