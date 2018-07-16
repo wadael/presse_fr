@@ -4,7 +4,7 @@
 
 Il s'agit d'un guide pour Neo4j, LA bdd nosql graph.
 
-Ce guide contient des scripts pour utiliser les données relatives à la presse française, publiées par **Le Monde Diplomatique** (https://github.com/mdiplo/Medias_francais)
+Ce guide contient des scripts pour utiliser les données relatives à la presse française, publiées par [**Le Monde Diplomatique**](https://github.com/mdiplo/Medias_francais)
 
 Ce repo contient l'asciidoc et le html pour un guide Neo4j à utiliser à partir du browser Neo4j avec
 
@@ -20,6 +20,7 @@ Si vous obtenez un message d'erreur, cela peut aussi être un problème de __cro
 Pour une fois, je produit un peu de contenu Neo4j en français.
 
 PUBS!
-Achetez mon livre ["Learning Neo4j, Second Edition"](https://www.packtpub.com/big-data-and-business-intelligence/learning-neo4j-3x-second-edition?referrer=wadael) 
 
-et abonnez-vous au [Diplo](https://www.monde-diplomatique.fr/) sur leur [boutique](https://boutique.monde-diplomatique.fr/)
+Mon livre ["Learning Neo4j, Second Edition"](https://www.packtpub.com/big-data-and-business-intelligence/learning-neo4j-3x-second-edition?referrer=wadael) 
+
+Abonnez-vous au [Diplo](https://www.monde-diplomatique.fr/) sur leur [boutique](https://boutique.monde-diplomatique.fr/)
