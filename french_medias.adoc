@@ -1,0 +1,354 @@
+== French/francophones medias
+Jérôme BATON
+v0.5, 2018-07-21
+:toc: right
+:imagesdir: images
+
+This guide is written in asciidoc and converted to html.
+
+Original URL is  https://wadael.github.io/presse_fr/french_medias.adoc
+
+=== What is a Neo4j "GUIDE"
+It is a web page to be read within the Neo4j browser (the builtin webapp accessible on port 7474). You certainly already know the movies guide that you ran with
+
+    :play movies
+
+
+=== Description
+This Neo4j formatted guide's goal is to show who owns what in the french media community by playing with some features of Neo4j.
+
+We will see:
+
+* data loading
+* apply some algorithms
+* answer a few obvious questions
+
+Disclaimer: this guide has no journalistic pretention. I wrote it to share my reuse of existing data.
+
+== Getting data
+The data is published by the team of the best French weekly, Le Monde Diplomatique, at this URL https://github.com/mdiplo/Medias_francais. 
+
+Thanks a lot guys
+
+Get the two .tsv files and drop them into the import folder of your Neo4j server. 
+
+Tsv files are text files using tabulation as a field separator 
+
+(Do the same with other files used later)
+
+
+== Modeling
+
+__medias_francais.tsv__ contains lines (Entities) which can be either contain contient (real) persons, companies or medias (tv, press,..).
+
+__relations_medias_francais.tsv__ contains the relations between those entites. 
+The field 'valeur' gives the owning percentage of the 'source' entity on the 'cible' (target) entity. 
+The relation to be created between the entities will be 'OWNS'.
+
+=== Labels
+The labels to be used will be Les étiquettes que j'envisage sont: Entite, Person,and Media.
+
+As the names will come from the content of the file which I dont want to change, and as this English version comes after the French version, I'll keep the Fr names from the import and add equivalent EN labels thereafter
+
+Because of the French content, in correct French, with spaces and accentuated e in the names, some data changes were to be made on import. 
+There are kept. 
+
+Please note that only one transformation can be made at import time on a field with plain Cypher.
+Unless you decide to get something unreadable by chaining the transformations.
+The best option for several modifications is to use a custom function.
+
+In my book, I repeated not to forget to create constraints, for the checking and the automatic index creation. 
+
+So, even with known data of a small volume thus no need of an index, lets run this: 
+
+[source,cypher]
+----
+CREATE CONSTRAINT ON (e:Entity) ASSERT e.name IS UNIQUE
+----
+
+
+== Data loading
+
+=== Code
+
+The codes proposed are 
+
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM 'file:///medias_francais.tsv' AS line FIELDTERMINATOR '\t' 
+MERGE (node0:Entity{name: line.nom}) 
+FOREACH(uselessVar IN CASE WHEN trim(line.`rangChallenges`) <> "" THEN [1] ELSE [] END | SET node0.challengesRanking= toInt(line.`rangChallenges`))
+FOREACH(uselessVa IN CASE WHEN trim(line.`mediaType`) <> "" THEN [1] ELSE [] END | SET node0.mediaType = line.`mediaType`)
+FOREACH(uselessV IN CASE WHEN trim(line.`mediaPeriodicite`) <> "" THEN [1] ELSE [] END | SET node0.mediaPeriodicity = line.`mediaPeriodicite`)
+FOREACH(useless IN CASE WHEN trim(line.`mediaEchelle`) <> "" THEN [1] ELSE [] END | SET node0.mediaScale = line.`mediaEchelle`)
+FOREACH(u IN CASE WHEN trim(line.commentaire) <> "" THEN [1] ELSE [] END | SET node0.comment = line.commentaire)
+
+WITH node0,line
+CALL apoc.create.addLabels(node0,[replace(line.`typeLibelle`," ","_")]) YIELD node
+RETURN node
+----
+
+The field 'challengesRanking' is the ranking of the richest French nationals. It comes from the 'Challenges' periodical. 
+
+The code for the second file is: 
+
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM 'file:///relations_medias_francais.tsv' AS ligne FIELDTERMINATOR '\t' 
+MERGE (nodeO:Entity{name: ligne.origine})
+MERGE (nodeC:Entity{name: ligne.cible})
+MERGE (nodeO)-[p:OWNS]->(nodeC)
+
+FOREACH(u IN CASE WHEN trim(ligne.valeur) <> "" THEN [1] ELSE [] END | SET p.percentage = toInt(ligne.valeur))
+FOREACH(u IN CASE WHEN trim(ligne.source) <> "" THEN [1] ELSE [] END | SET p.source = ligne.source)
+FOREACH(u IN CASE WHEN trim(ligne.datePublication) <> "" THEN [1] ELSE [] END | SET p.publicationDate = ligne.datePublication)
+----
+
+To add the English labels and remove the French ones
+
+[source,cypher]
+----
+MATCH (pp:Personne_physique)
+SET pp:Person
+REMOVE pp:Personne_physique
+WITH pp
+MATCH (pm:Personne_morale)
+SET pm:Company
+REMOVE pm:Personne_morale
+WITH pp, pm
+MATCH (m:Média)
+SET m:Media
+REMOVE m:Média
+RETURN pp,pm,m
+----
+
+
+== Overview
+Let's see who owns what with a simple query
+
+[source,cypher]
+----  
+MATCH pom = (pp:Person)-[:OWNS*]->(m:Media)
+RETURN pom
+----
+
+The star * character means that there can be more than one OWN relation in the path.
+
+== Pagerank
+Let's launch the PageRank algorithm, just to see the most connected nodes.
+This uses the APOC plugin. 
+
+[source,cypher]
+----  
+MATCH (node:Entity)
+WITH collect(node) AS nodes
+CALL apoc.algo.pageRank(nodes) YIELD node, score
+RETURN node.name, score
+ORDER BY score DESC
+----
+
+We get the most connected nodes first.
+Surprisingly, the top 3 is 
+
+|===
+|"La Tribune"|0.69473
+|"Hima Groupe"|0.64087
+|"Arte"|0.62095
+|===
+
+
+Now, for the persons :
+[source,cypher]
+----  
+MATCH (no:Person) WITH collect(no) AS nodes
+CALL apoc.algo.pageRankWithConfig(nodes,{types:'OWNS'}) YIELD node, score
+RETURN node.name, score
+ORDER BY score DESC
+----
+
+Surprisingly, all the persons listed have a score of 0.15.
+It means they all have the same number of connections. Weird coincidence.
+
+Lets look for who owns the most medias, with a graph answer
+
+
+[source,cypher]
+----  
+MATCH (pp:Person)-[p:OWNS]->(m:Media)
+RETURN pp.name, collect(m.name) as titles, size(collect(m.name)) as nbTitles ORDER BY nbTitles DESC
+----  
+
+Only direct possesions are given and they seem to only have one each. This explains that.
+
+Let's dig deeper.
+
+[source,cypher]
+----  
+MATCH (pp:Person)-[p:OWNS*]->(m:Media)
+RETURN pp.name, collect(m.name) as titles, size(collect(m.name)) as nbTitles ORDER BY nbTitles DESC
+----  
+
+Look at the star. It gives a more credible result.
+
+== Correlation medias count et Challenges ranking ?
+
+Let's see if the persons owning the most medias have the highest ranking.
+What do you think ?
+
+Try this Cypher query
+[source,cypher]
+----  
+MATCH (pp:Person)-[p:OWNS*..]->(m:Media)
+RETURN  coalesce(toInt(pp.challengesRanking),0) as rank, size(collect(m.name)) as nbTitles ORDER BY rank ASC
+----
+
+For a quick visual result, I use Spoon (which I believe was created by Michael Hunger) (:play spoon.html and follow instructions).
+I got this chart as a result.
+
+image::https://wadael.github.io/presse_fr/images/barchart_presse_01.png[]
+
+I attributed rank zero to the persons without a ChallengesRanking. That explains why the first column is high.
+
+I expected a declining shape. Certainly it was true in the middle of the 20th century. Maybe. 
+
+Remember, extra data is about press which obviously puts aside tv. 
+
+== Data aggregation
+A media list with owners is a good start but. The more data the better.
+Its not uncommon to hear that there is many taxes in France.
+It is also true there is a lot of governmental grants, and several for the press, on different criteria.
+
+Amongst the questions a tax payer may have, I have:
+
+* what are the medias getting money ?
+* what are their diffusion ?
+* who owns them ? 
+* are the owners filthy rich already ? 
+* which owner has the most impact on the population ?
+
+
+=== Grants to press
+
+
+I found some answers via the Internet
+
+http://archive.wikiwix.com/cache/?url=https%3A%2F%2Fwww.data.gouv.fr%2Ffr%2Fdatasets%2Faides-a-la-presse-classement-des-titres-de-presse-aides%2F[here], https://www.data.gouv.fr/fr/datasets/aides-a-la-presse-classement-des-titres-de-presse-aides/[there] for years 2012 to 2016.
+
+This is human-readable XLS format, with fancy presentation inside that forbids to convert it to csv and import dramalessly.
+
+MATCHing on the name sounds obvious. But this file does not use the same naming than the first two.
+
+For example "L'Humanité" is referenced as "Humanité (L')". 
+Same for "Le Figaro" et "Figaro (Le)"
+
+And I'm writing this guide for fame, not for fortune so ... I can not use this file as only part of it would be used. Unless I rework the data.
+
+The two biggest beneficiaries are:
+
+|====
+|SOCIETE COMMUNE POUR LES INFRASTRUCTURES DE LA DISTRIBUTION DE LA PRESSE | 4 419 926,00 €
+|IMPRIMERIE DE L'AVESNOIS| 2 503 123,00 €
+|====
+
+Unknown to me.
+
+Other beneficiaries are listed as groups of websites like 
+ j7.agefi.fr; agefi.fr; L'Agefi Hebdo Magazine 
+ 
+for	159 708,00 €
+
+== One hit, two features
+
+Luckily, I have found this  https://www.data.gouv.fr/fr/datasets/r/6f66e292-c4d9-439e-916d-26257107833a[URL] corresponding to a CSV file with both grants and diffusion informations.
+
+Before to import and create nodes, I write a RETURN query to check the columns.
+
+That helps to see that some newspapers are given with their website.
+This will need to do some string splitting.
+
+[source,cypher]
+----  
+WITH "file:///aides-a-la-presse-classement-des-titres-de-presse-aides.csv" AS url
+LOAD CSV WITH HEADERS FROM url AS ligne FIELDTERMINATOR ";"
+RETURN ligne.`Bénéficiaires` as Beneficiary, split( ligne.`Bénéficiaires`,"/"), ligne.`Total des aides individuelles (en €)` as totalGrants,ligne.`Diffusion annuelle (en exemplaires` as yearlyDiffusion, ligne.`Année` as year LIMIT 5 
+----  
+
+This new content will be inserted in a new node labelled 'Statistic' linked to the  Media node with a 'DESCRIBE' relation.
+
+
+First, 
+[source,cypher]
+----  
+MATCH (m:Media)
+SET m.upName = toUpper(m.name)
+RETURN count(m)
+----  
+
+
+[source,cypher]
+----  
+WITH "file:///aides-a-la-presse-classement-des-titres-de-presse-aides.csv" AS url
+LOAD CSV WITH HEADERS FROM url AS ligne FIELDTERMINATOR ";"
+
+MERGE(m:Media {upName:toUpper( split( ligne.`Bénéficiaires`,"/")[0] ) })
+SET m.name=split( ligne.`Bénéficiaires`,"/")[0]
+CREATE (s:Statistic { year: toInt(ligne.`Année`), totalGrants: toInt(ligne.`Total des aides individuelles (en €)`), yearlyDiffusion: toInt(ligne.`Diffusion annuelle (en exemplaires`)  })
+
+CREATE (m)<-[d:DESCRIBE]-(s)
+RETURN m,d,s
+----
+
+We notice that some press media do not have statistics for 2015 and 2016.
+
+
+== Who gets the most euros ?
+Who gets the most grant money 
+
+[source,cypher]
+----  
+MATCH (pp:Person)-[p:OWNS*..]->(m:Media)<--(s:Statistic)
+RETURN pp.name, coalesce(toInt(pp.challengesRanking),0) as challengesRanking, size(collect(m.name)) as nbTitles, sum(s.totalGrants) AS jackpot ORDER BY jackpot DESC
+----
+
+Interesting sums.
+However, before to cry wolf, checking the percentage owned of each node between the person and the media is necessary.
+It is not because a title of a billionaire gets millions that those millions ends in the billionaire's (overseas tax-free) pockets.
+
+== Who has the most impact ?
+
+I say impact because in my opinion too many persons take what's written for truth. 
+
+And some moguls are known to make print what serves them best.
+Or not print what would disserve them.
+
+So, imho, it is an interesting metric.
+However, we know its TVs that makes opinions now, and fac*b*k.
+
+[source,cypher]
+----  
+MATCH (pp:Person)-[p:OWNS*..]->(m:Media)<--(s:Statistic)
+RETURN pp.name, coalesce(toInt(pp.challengesRanking),0) as challengesRanking, size(collect(m.name)) as nbTitles, apoc.number.format( sum(s.yearlyDiffusion)) AS targetSize ORDER BY targetSize DESC
+----
+
+== Self-promotion
+
+[width="100%",cols="2"] 
+|========================================================= 
+|If you want to learn more about Neo4j, my book https://www.packtpub.com/big-data-and-business-intelligence/learning-neo4j-3x-second-edition?referrer=wadael[Learning Neo4j, Second Edition] is available on many websites. 
+
+My editor: Packt Publishing often does discount campaigns (like any book for 10$, 3 for 25$)
+
+a|image::https://wadael.github.io/presse_fr/images/B05824_cover.png[]
+
+| Do you need a consultant ?
+| Contact me via https://www.linkedin.com/in/jeromebaton/[LinkedIn] or via email: firstnameLastname followed by .pro@gmail.com 
+|=========================================================
+
+Thanks for reading the ad. 
+
+Your comments are welcome (pr, issues).
+This guide may get more content based on your feedback 
+
+
+jerome baton
+
