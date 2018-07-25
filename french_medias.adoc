@@ -383,17 +383,15 @@ RETURN pp.name, coalesce(toInt(pp.challengesRanking),0) as challengesRanking, si
 
 == Self-promotion
 
-[width="100%",cols="2"] 
-|========================================================= 
-|If you want to learn more about Neo4j, my book https://www.packtpub.com/big-data-and-business-intelligence/learning-neo4j-3x-second-edition?referrer=wadael[Learning Neo4j, Second Edition] is available on many websites. 
+
+If you want to learn more about Neo4j, my book https://www.packtpub.com/big-data-and-business-intelligence/learning-neo4j-3x-second-edition?referrer=wadael[Learning Neo4j, Second Edition] is available on many websites. 
 
 My editor: Packt Publishing often does discount campaigns (like any book for 10$, 3 for 25$)
 
-a|image::https://wadael.github.io/presse_fr/images/B05824_cover.png
+image::https://wadael.github.io/presse_fr/images/B05824_cover.png
 
-| Do you need a consultant ?
-| Contact me via https://www.linkedin.com/in/jeromebaton/[LinkedIn] or via email: firstnameLastname followed by .pro@gmail.com 
-|=========================================================
+Do you need a consultant ?
+Contact me via https://www.linkedin.com/in/jeromebaton/[LinkedIn] or via email: firstnameLastname followed by .pro@gmail.com 
 
 Thanks for reading the ad. 
 
