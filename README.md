@@ -27,7 +27,8 @@ Mon livre ["Learning Neo4j, Second Edition"](https://www.packtpub.com/big-data-a
 
 Abonnez-vous au [Diplo](https://www.monde-diplomatique.fr/) sur leur [boutique](https://boutique.monde-diplomatique.fr/)
 
-
+## Mise à jour
+20180725 : Ajout de la partie R pour obtenir des graphiques
 ----------------------------------------------------------
 
 This github repo is for a guide to run within Neo4j, the graph database
@@ -47,3 +48,6 @@ If you get an error meesage in chrome, either install an extension for allowing 
 
 Learn about my book ["Learning Neo4j, Second Edition"](https://www.packtpub.com/big-data-and-business-intelligence/learning-neo4j-3x-second-edition?referrer=wadael) by playing the guide
 
+
+## Updates
+20180725 : Added the part about R charts.

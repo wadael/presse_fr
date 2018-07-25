@@ -1,6 +1,6 @@
 == Guide de chargement des médias français/francophones
 Jérôme BATON
-v0.5, 2018-07-07
+v0.6, 2018-07-25
 :toc: right
 :imagesdir: images
 
@@ -281,8 +281,60 @@ MATCH (pp:Personne_physique)-[p:POSSEDE*..]->(m:Média)<--(s:Statistique)
 RETURN pp.nom, coalesce(toInt(pp.rangchallenges),0) as rangChallenges, size(collect(m.nom)) as nbTitres, sum(s.totalAides) AS jackpot ORDER BY jackpot DESC
 ----
 
-De belles sommes, de quoi être très euro
+De belles sommes, de quoi être très euro.
 
+Cependant, avant de crier au loup, il faudrait vérifier que les journaux sont bénéficiaires et à quel pourcentage ils sont possédés par les personnes citées.
+
+
+
+== Bonus - Un peu d'R
+
+J'aime bien voir d'autres langages de temps en temps, surtout quand cela fait bien le job et surtout : rapidement.
+
+Pour obtenir des représentations graphiques rapidement, le https://www.r-project.org/[langage R] est ce qui est le plus indiqué 
+
+Suivent comment obtenir deux représentations graphiques des aides obtenues par personnes.
+
+=== Pie chart
+J'ai récupéré les résultats via la sortie texte du Neo4j browser, puis dans le tableur, j'ai transformé les colonnes en lignes afin de faire ce petit programme en R
+
+[source,r]
+---- 
+group=c("Bernard Arnault","Famille Hutin","Famille Hurbain","Famille Lemoine","Famille Baylet","Xavier Niel","Matthieu Pigasse","Arnaud Lagardère","Bernard Tapie","Famille Mohn","Yves de Chaisemartin","Famille Saint-Cricq","François Pinault","Philippe Hersant","Édouard Coudurier")   
+
+value=c(18454766,7240740,2970948,2806813,2317190,1565190,1565190,1533157,1077799,550688	,250628	,243025	,219387,43018,11565)
+
+pie(value, group) 
+----  
+
+Ce qui permet d'obtenir ce chart, illisible
+
+image::https://wadael.github.io/presse_fr/images/press_pie.png[pie chart]
+
+
+
+
+=== Treemap
+
+Un treemap va partager les aires d'un rectangle entre les éléments d'un tableau, à hauteur de leurs valeurs.
+
+
+image::https://wadael.github.io/presse_fr/images/treemap_presse.png[Treemap]
+
+
+[source,r]
+---- 
+library(treemap)
+
+group=c("Bernard Arnault","Famille Hutin","Famille Hurbain","Famille Lemoine","Famille Baylet","Xavier Niel","Matthieu Pigasse","Arnaud Lagardère","Bernard Tapie","Famille Mohn","Yves de Chaisemartin","Famille Saint-Cricq","François Pinault","Philippe Hersant","Édouard Coudurier")   
+
+value=c(18454766,7240740,2970948,2806813,2317190,1565190,1565190,1533157,1077799,550688	,250628	,243025	,219387,43018,11565)
+
+data=data.frame(group,value)
+
+# treemap
+treemap(data,index="group",vSize="value",type="index")
+---- 
 
 
 == Qui touche le plus de lecteurs ?

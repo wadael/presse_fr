@@ -51,7 +51,7 @@
     <div>
       <div class="paragraph">
 <p>Jérôme BATON
-v0.5, 2018-07-21
+v0.6, 2018-07-25
 :toc: right
 :imagesdir: images</p>
 </div>
@@ -567,6 +567,78 @@ RETURN pp.name, coalesce(toInt(pp.challengesRanking),0) as challengesRanking, si
 <p>Interesting sums.
 However, before to cry wolf, checking the percentage owned of each node between the person and the media is necessary.
 It is not because a title of a billionaire gets millions that those millions ends in the billionaire&#8217;s (overseas tax-free) pockets.</p>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Bonus - Some R</h3>
+    <br/>
+    <div>
+      <div class="paragraph">
+<p>From time to time, I like to see other languages than those I am used to. Even more when they are specialized to do quickly a job I want to do.</p>
+</div>
+<div class="paragraph">
+<p>The <a href="https://www.r-project.org/">R language</a> is the current best choice to get charts quickly, like those two next representations of who gets the most governmental money.</p>
+</div>
+
+
+
+   <h4>Neo4j result to R</h4>
+   <div class="paragraph">
+<p>I got the values as text in the Neo4j browser, then used a spreadsheet to convert from columns to lines.
+A text editor with a column mode can be used too.</p>
+</div>
+
+
+
+   <h4>Pie chart</h4>
+   <div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="r" lang="r"><!--code class="r language-r"-->group=c("Bernard Arnault","Famille Hutin","Famille Hurbain","Famille Lemoine","Famille Baylet","Xavier Niel","Matthieu Pigasse","Arnaud Lagardère","Bernard Tapie","Famille Mohn","Yves de Chaisemartin","Famille Saint-Cricq","François Pinault","Philippe Hersant","Édouard Coudurier")
+
+value=c(18454766,7240740,2970948,2806813,2317190,1565190,1565190,1533157,1077799,550688	,250628	,243025	,219387,43018,11565)
+
+pie(value, group)<!--/code--></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>That creates an unreadable chart.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://wadael.github.io/presse_fr/images/press_pie.png" alt="pie chart">
+</div>
+</div>
+
+
+
+   <h4>Treemap</h4>
+   <div class="paragraph">
+<p>A treemap shares its total area between the results, according to their values</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://wadael.github.io/presse_fr/images/treemap_presse.png" alt="Treemap">
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="r" lang="r"><!--code class="r language-r"-->library(treemap)
+
+group=c("Bernard Arnault","Famille Hutin","Famille Hurbain","Famille Lemoine","Famille Baylet","Xavier Niel","Matthieu Pigasse","Arnaud Lagardère","Bernard Tapie","Famille Mohn","Yves de Chaisemartin","Famille Saint-Cricq","François Pinault","Philippe Hersant","Édouard Coudurier")
+
+value=c(18454766,7240740,2970948,2806813,2317190,1565190,1565190,1533157,1077799,550688	,250628	,243025	,219387,43018,11565)
+
+data=data.frame(group,value)
+
+# treemap
+treemap(data,index="group",vSize="value",type="index")<!--/code--></pre>
+</div>
 </div>
 	</div>
   </div>

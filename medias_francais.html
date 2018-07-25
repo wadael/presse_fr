@@ -51,7 +51,7 @@
     <div>
       <div class="paragraph">
 <p>Jérôme BATON
-v0.5, 2018-07-07
+v0.6, 2018-07-25
 :toc: right
 :imagesdir: images</p>
 </div>
@@ -553,7 +553,80 @@ RETURN pp.nom, coalesce(toInt(pp.rangchallenges),0) as rangChallenges, size(coll
 </div>
 </div>
 <div class="paragraph">
-<p>De belles sommes, de quoi être très euro</p>
+<p>De belles sommes, de quoi être très euro.</p>
+</div>
+<div class="paragraph">
+<p>Cependant, avant de crier au loup, il faudrait vérifier que les journaux sont bénéficiaires et à quel pourcentage ils sont possédés par les personnes citées.</p>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Bonus - Un peu d&#8217;R</h3>
+    <br/>
+    <div>
+      <div class="paragraph">
+<p>J&#8217;aime bien voir d&#8217;autres langages de temps en temps, surtout quand cela fait bien le job et surtout : rapidement.</p>
+</div>
+<div class="paragraph">
+<p>Pour obtenir des représentations graphiques rapidement, le <a href="https://www.r-project.org/">langage R</a> est ce qui est le plus indiqué</p>
+</div>
+<div class="paragraph">
+<p>Suivent comment obtenir deux représentations graphiques des aides obtenues par personnes.</p>
+</div>
+
+
+
+   <h4>Pie chart</h4>
+   <div class="paragraph">
+<p>J&#8217;ai récupéré les résultats via la sortie texte du Neo4j browser, puis dans le tableur, j&#8217;ai transformé les colonnes en lignes afin de faire ce petit programme en R</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="r" lang="r"><!--code class="r language-r"-->group=c("Bernard Arnault","Famille Hutin","Famille Hurbain","Famille Lemoine","Famille Baylet","Xavier Niel","Matthieu Pigasse","Arnaud Lagardère","Bernard Tapie","Famille Mohn","Yves de Chaisemartin","Famille Saint-Cricq","François Pinault","Philippe Hersant","Édouard Coudurier")
+
+value=c(18454766,7240740,2970948,2806813,2317190,1565190,1565190,1533157,1077799,550688	,250628	,243025	,219387,43018,11565)
+
+pie(value, group)<!--/code--></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Ce qui permet d&#8217;obtenir ce chart, illisible</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://wadael.github.io/presse_fr/images/press_pie.png" alt="pie chart">
+</div>
+</div>
+
+
+
+   <h4>Treemap</h4>
+   <div class="paragraph">
+<p>Un treemap va partager les aires d&#8217;un rectangle entre les éléments d&#8217;un tableau, à hauteur de leurs valeurs.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://wadael.github.io/presse_fr/images/treemap_presse.png" alt="Treemap">
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="r" lang="r"><!--code class="r language-r"-->library(treemap)
+
+group=c("Bernard Arnault","Famille Hutin","Famille Hurbain","Famille Lemoine","Famille Baylet","Xavier Niel","Matthieu Pigasse","Arnaud Lagardère","Bernard Tapie","Famille Mohn","Yves de Chaisemartin","Famille Saint-Cricq","François Pinault","Philippe Hersant","Édouard Coudurier")
+
+value=c(18454766,7240740,2970948,2806813,2317190,1565190,1565190,1533157,1077799,550688	,250628	,243025	,219387,43018,11565)
+
+data=data.frame(group,value)
+
+# treemap
+treemap(data,index="group",vSize="value",type="index")<!--/code--></pre>
+</div>
 </div>
 	</div>
   </div>

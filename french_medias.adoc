@@ -1,6 +1,6 @@
 == French/francophones medias
 Jérôme BATON
-v0.5, 2018-07-21
+v0.6, 2018-07-25
 :toc: right
 :imagesdir: images
 
@@ -313,6 +313,57 @@ RETURN pp.name, coalesce(toInt(pp.challengesRanking),0) as challengesRanking, si
 Interesting sums.
 However, before to cry wolf, checking the percentage owned of each node between the person and the media is necessary.
 It is not because a title of a billionaire gets millions that those millions ends in the billionaire's (overseas tax-free) pockets.
+
+
+
+== Bonus - Some R
+
+From time to time, I like to see other languages than those I am used to. Even more when they are specialized to do quickly a job I want to do.
+
+
+The https://www.r-project.org/[R language] is the current best choice to get charts quickly, like those two next representations of who gets the most governmental money. 
+
+=== Neo4j result to R
+I got the values as text in the Neo4j browser, then used a spreadsheet to convert from columns to lines.
+A text editor with a column mode can be used too.
+
+=== Pie chart
+
+[source,r]
+---- 
+group=c("Bernard Arnault","Famille Hutin","Famille Hurbain","Famille Lemoine","Famille Baylet","Xavier Niel","Matthieu Pigasse","Arnaud Lagardère","Bernard Tapie","Famille Mohn","Yves de Chaisemartin","Famille Saint-Cricq","François Pinault","Philippe Hersant","Édouard Coudurier")   
+
+value=c(18454766,7240740,2970948,2806813,2317190,1565190,1565190,1533157,1077799,550688	,250628	,243025	,219387,43018,11565)
+
+pie(value, group) 
+----  
+
+That creates an unreadable chart.
+
+image::https://wadael.github.io/presse_fr/images/press_pie.png[pie chart]
+
+
+=== Treemap
+
+A treemap shares its total area between the results, according to their values
+
+
+image::https://wadael.github.io/presse_fr/images/treemap_presse.png[Treemap]
+
+
+[source,r]
+---- 
+library(treemap)
+
+group=c("Bernard Arnault","Famille Hutin","Famille Hurbain","Famille Lemoine","Famille Baylet","Xavier Niel","Matthieu Pigasse","Arnaud Lagardère","Bernard Tapie","Famille Mohn","Yves de Chaisemartin","Famille Saint-Cricq","François Pinault","Philippe Hersant","Édouard Coudurier")   
+
+value=c(18454766,7240740,2970948,2806813,2317190,1565190,1565190,1533157,1077799,550688	,250628	,243025	,219387,43018,11565)
+
+data=data.frame(group,value)
+
+# treemap
+treemap(data,index="group",vSize="value",type="index")
+---- 
 
 == Who has the most impact ?
 
