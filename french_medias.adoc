@@ -388,7 +388,7 @@ If you want to learn more about Neo4j, my book https://www.packtpub.com/big-data
 
 My editor: Packt Publishing often does discount campaigns (like any book for 10$, 3 for 25$)
 
-image::https://wadael.github.io/presse_fr/images/B05824_cover.png
+image::https://wadael.github.io/presse_fr/images/B05824_cover.png[]
 
 Do you need a consultant ?
 Contact me via https://www.linkedin.com/in/jeromebaton/[LinkedIn] or via email: firstnameLastname followed by .pro@gmail.com 
