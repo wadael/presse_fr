@@ -285,7 +285,14 @@ De belles sommes, de quoi être très euro.
 
 Cependant, avant de crier au loup, il faudrait vérifier que les journaux sont bénéficiaires et à quel pourcentage ils sont possédés par les personnes citées.
 
-
+Ce qui se requête comme ceci.
+[source,cypher]
+----  
+MATCH path=(p:Personne_physique)-[o:POSSEDE*]->(m:Média)
+RETURN p.nom, m.nom, reduce(prod=1.0, x in relationships(path) | prod*coalesce( x.valeur, 0.0 )/100 ) as pourcentagePossession
+ORDER BY pourcentagePossession DESC
+----  
+Je remercie Stefan Armbruster de Neo4j qui m'a rappelé l'existence de la fonction reduce.
 
 == Bonus - Un peu d'R
 

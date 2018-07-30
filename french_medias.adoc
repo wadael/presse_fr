@@ -315,6 +315,16 @@ However, before to cry wolf, checking the percentage owned of each node between 
 It is not because a title of a billionaire gets millions that those millions ends in the billionaire's (overseas tax-free) pockets.
 
 
+This can be queried too :)
+
+[source,cypher]
+----  
+MATCH path=(p:Person)-[o:Owns*]->(m:Media)
+RETURN p.name, m.name, reduce(prod=1.0, x in relationships(path) | prod*coalesce( x.value, 0.0 )/100 ) as possession
+ORDER BY possession DESC
+----
+
+I thank Stefan Armbruster (Neo4j) who reminded me the existence of the  reduce function.
 
 == Bonus - Some R
 

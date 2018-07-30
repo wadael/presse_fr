@@ -568,6 +568,19 @@ RETURN pp.name, coalesce(toInt(pp.challengesRanking),0) as challengesRanking, si
 However, before to cry wolf, checking the percentage owned of each node between the person and the media is necessary.
 It is not because a title of a billionaire gets millions that those millions ends in the billionaire&#8217;s (overseas tax-free) pockets.</p>
 </div>
+<div class="paragraph">
+<p>This can be queried too :)</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH path=(p:Person)-[o:Owns*]-&gt;(m:Media)
+RETURN p.name, m.name, reduce(prod=1.0, x in relationships(path) | prod*coalesce( x.value, 0.0 )/100 ) as possession
+ORDER BY possession DESC<!--/code--></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>I thank Stefan Armbruster (Neo4j) who reminded me the existence of the  reduce function.</p>
+</div>
 	</div>
   </div>
 </slide>

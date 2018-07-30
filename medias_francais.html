@@ -558,6 +558,19 @@ RETURN pp.nom, coalesce(toInt(pp.rangchallenges),0) as rangChallenges, size(coll
 <div class="paragraph">
 <p>Cependant, avant de crier au loup, il faudrait vérifier que les journaux sont bénéficiaires et à quel pourcentage ils sont possédés par les personnes citées.</p>
 </div>
+<div class="paragraph">
+<p>Ce qui se requête comme ceci.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH path=(p:Personne_physique)-[o:POSSEDE*]-&gt;(m:Média)
+RETURN p.nom, m.nom, reduce(prod=1.0, x in relationships(path) | prod*coalesce( x.valeur, 0.0 )/100 ) as pourcentagePossession
+ORDER BY pourcentagePossession DESC<!--/code--></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Je remercie Stefan Armbruster de Neo4j qui m&#8217;a rappelé l&#8217;existence de la fonction reduce.</p>
+</div>
 	</div>
   </div>
 </slide>
